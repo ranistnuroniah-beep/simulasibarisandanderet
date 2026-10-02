@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulasi Barisan dan Deret Geometri</title>
+<style>
+:root{--bg:#fbfaf7;--card:#fff;--tx:#1f2933;--mu:#64707d;--ac:#0f766e;--ac2:#c2410c;--bd:#d9d6cf;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15191c;--card:#1e2427;--tx:#e8ecef;--mu:#9aa6b0;--ac:#2dd4bf;--ac2:#fb923c;--bd:#37414a}}
+:root[data-theme="dark"]{--bg:#15191c;--card:#1e2427;--tx:#e8ecef;--mu:#9aa6b0;--ac:#2dd4bf;--ac2:#fb923c;--bd:#37414a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:860px;margin:0 auto;padding:16px}
+h1{font-size:1.3rem;margin:4px 0}
+.sub{color:var(--mu);margin:0 0 12px;font-size:.92rem}
+nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+nav button{flex:1 1 120px;padding:9px 6px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px;font:inherit;cursor:pointer}
+nav button[aria-selected="true"]{background:var(--ac);color:#fff;border-color:var(--ac);font-weight:600}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:12px}
+.ctl{display:grid;grid-template-columns:auto 1fr 70px;gap:8px 10px;align-items:center}
+.ctl label{font-weight:600}
+input[type=range]{width:100%;accent-color:var(--ac)}
+input[type=number]{width:100%;padding:5px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);color:var(--tx);font:inherit}
+.big{font-size:1.5rem;font-weight:700;color:var(--ac)}
+.fx{font-family:Georgia,serif;font-size:1.05rem;background:var(--bg);border:1px dashed var(--bd);border-radius:8px;padding:8px 10px;margin:8px 0;overflow-x:auto}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{border:1px solid var(--bd);padding:4px 8px;text-align:right}
+th{background:var(--bg)}
+td:first-child,th:first-child{text-align:center}
+.note{color:var(--mu);font-size:.9rem}
+.tip{border-left:4px solid var(--ac2);padding:4px 10px;margin:8px 0;background:var(--bg)}
+svg{width:100%;height:auto;display:block}
+.lg span{display:inline-block;margin-right:14px;font-size:.88rem}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px}
+.stack{display:flex;align-items:flex-end;gap:2px;height:110px;border-bottom:2px solid var(--bd);padding-top:6px;overflow:hidden}
+.stack i{flex:1;background:var(--ac);min-width:3px;border-radius:2px 2px 0 0}
+</style></head>
+<body><main>
+<h1>Simulasi Barisan dan Deret Geometri</h1>
+<p class="sub">SMAN 1 Cigalontang · Matematika Kelas XI · Geser, amati, lalu tuliskan temuanmu di LKM.</p>
+<nav role="tablist" id="tabs"></nav>
+<div id="v"></div>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+const f=(x,d=2)=>{if(!isFinite(x))return '—';const a=Math.abs(x);if(a>=1e15||(a>0&&a<1e-6))return x.toExponential(3);return x.toLocaleString('id-ID',{maximumFractionDigits:d})};
+const st={a:1,r:2,n:8,fold:6,m:2000000,p:5,t:5};
+const tabs=[['lipat','Lipat Kertas'],['barisan','Barisan Un'],['deret','Deret Sn'],['bunga','Bunga Majemuk']];
+let cur='lipat';
+function nav(){const n=$('#tabs');n.innerHTML='';tabs.forEach(([k,l])=>{const b=document.createElement('button');b.textContent=l;b.setAttribute('role','tab');b.setAttribute('aria-selected',k===cur);b.onclick=()=>{cur=k;nav();draw()};n.appendChild(b)})}
+function slider(id,lab,min,max,step,val){return `<label for="${id}">${lab}</label><input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}"><input type="number" id="${id}n" min="${min}" max="${max}" step="${step}" value="${val}">`}
+function bind(id,key,cb){const r=$('#'+id),n=$('#'+id+'n');const set=v=>{v=parseFloat(v);if(isNaN(v))return;st[key]=v;r.value=v;n.value=v;cb()};r.oninput=()=>set(r.value);n.onchange=()=>set(n.value)}
+function len(mm){if(mm<10)return f(mm,2)+' mm';if(mm<1000)return f(mm/10,1)+' cm';if(mm<1e6)return f(mm/1000,2)+' m';return f(mm/1e6,2)+' km'}
+function chart(ser,xs){const W=640,H=260,L=56,B=30,T=12,R=12;let mx=Math.max(...ser.flatMap(s=>s.d),1e-9),mn=Math.min(0,...ser.flatMap(s=>s.d));
+const X=i=>L+i*(W-L-R)/Math.max(xs.length-1,1),Y=v=>T+(H-T-B)*(1-(v-mn)/(mx-mn||1));let o=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Grafik titik (k, Uk)">`;
+for(let i=0;i<=4;i++){const v=mn+(mx-mn)*i/4,y=Y(v);o+=`<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="var(--bd)"/><text x="${L-6}" y="${y+4}" text-anchor="end" font-size="11" fill="var(--mu)">${f(v,1)}</text>`}
+xs.forEach((x,i)=>{o+=`<text x="${X(i)}" y="${H-10}" text-anchor="middle" font-size="11" fill="var(--mu)">${x}</text>`});
+ser.forEach(s=>{o+=`<polyline fill="none" stroke="${s.c}" stroke-width="2" points="${s.d.map((v,i)=>X(i)+','+Y(v)).join(' ')}"/>`+s.d.map((v,i)=>`<circle cx="${X(i)}" cy="${Y(v)}" r="4" fill="${s.c}"/>`).join('')});return o+'</svg>'}
+const pw=(a,r,k)=>a*Math.pow(r,k);
+function vLipat(){
+ const n=st.fold,lap=Math.pow(2,n),mm=0.1*lap;
+ let rows='';for(let i=0;i<=Math.min(n,12);i++)rows+=`<tr><td>${i}</td><td>${f(Math.pow(2,i),0)}</td><td>${len(0.1*Math.pow(2,i))}</td></tr>`;
+ const bars=Array.from({length:Math.min(n,20)+1},(_,i)=>`<i style="height:${Math.max(2,100*Math.pow(2,i-Math.min(n,20)))}%" title="lipatan ${i}"></i>`).join('');
+ $('#v').innerHTML=`<div class="card"><p>Setiap lipatan membuat kertas <b>dua kali lebih tebal</b>. Tebal satu lembar HVS dianggap 0,1 mm.</p>
+ <div class="ctl">${slider('fold','Lipatan ke-',0,30,1,n)}</div></div>
+ <div class="card"><div>Banyak lapisan</div><div class="big">${f(lap,0)}</div><div>Tebal tumpukan</div><div class="big">${len(mm)}</div>
+ <div class="stack" aria-hidden="true">${bars}</div><p class="note">Tinggi batang: tebal tumpukan pada setiap lipatan (skala dibandingkan lipatan terakhir).</p>
+ <div class="fx">U<sub>${n+1}</sub> = 1 · 2<sup>${n}</sup> = ${f(lap,0)}</div>
+ <div class="tip">Tebakanmu di LKM 1 Kegiatan 1 tadi dekat atau jauh? Geser sampai tumpukan melebihi tinggi gedung 10 m. Berapa lipatan yang dibutuhkan?</div></div>
+ <div class="card tw"><table><tr><th>Lipatan ke-</th><th>Lapisan</th><th>Tebal</th></tr>${rows}</table></div>`;
+ bind('fold','fold',vLipat)}
+function vBar(){
+ const {a,r,n}=st,b=a*r-a,ks=Array.from({length:n},(_,i)=>i+1);
+ const g=ks.map(k=>pw(a,r,k-1)),ar=ks.map(k=>a+(k-1)*b);
+ const rows=ks.map((k,i)=>`<tr><td>${k}</td><td>${f(g[i])}</td><td>${f(ar[i])}</td></tr>`).join('');
+ const kind=r>1?'naik makin cepat':r===1?'tetap (konstan)':r>0?'menurun mendekati nol':r===0?'menjadi nol':'berganti tanda (+/−)';
+ $('#v').innerHTML=`<div class="card"><div class="ctl">${slider('a','Suku pertama a',1,20,1,a)}${slider('r','Rasio r',-3,4,0.1,r)}${slider('n','Banyak suku n',2,15,1,n)}</div></div>
+ <div class="card"><div class="fx">U<sub>n</sub> = a · r<sup>n−1</sup> → U<sub>${n}</sub> = ${a} · ${f(r,1)}<sup>${n-1}</sup> = <b>${f(g[n-1])}</b></div>
+ <p>Pola barisan geometri: <b>${kind}</b>. Garis biru = geometri (r = ${f(r,1)}); garis jingga = aritmetika dengan suku yang sama awalnya (beda b = ${f(b,1)}).</p>
+ <div class="lg"><span><i class="dot" style="background:var(--ac)"></i>Geometri</span><span><i class="dot" style="background:var(--ac2)"></i>Aritmetika</span></div>
+ ${chart([{d:g,c:'var(--ac)'},{d:ar,c:'var(--ac2)'}],ks)}
+ <div class="tip">Coba r = 2, lalu 1, lalu 0,5, lalu −1. Apa yang terjadi pada bentuk titik-titiknya? Catat di LKM 1 Kegiatan 2 nomor 3.</div></div>
+ <div class="card tw"><table><tr><th>k</th><th>U<sub>k</sub> geometri</th><th>U<sub>k</sub> aritmetika</th></tr>${rows}</table></div>`;
+ ['a','r','n'].forEach(k=>bind(k,k,vBar))}
+function vDeret(){
+ const {a,r,n}=st,ks=Array.from({length:n},(_,i)=>i+1);let s=0;
+ const rows=ks.map(k=>{const u=pw(a,r,k-1);s+=u;return `<tr><td>${k}</td><td>${f(u)}</td><td>${f(s)}</td></tr>`}).join('');
+ const sn=r===1?a*n:a*(1-Math.pow(r,n))/(1-r);
+ $('#v').innerHTML=`<div class="card"><div class="ctl">${slider('a','Suku pertama a',1,20,1,a)}${slider('r','Rasio r',-3,4,0.1,r)}${slider('n','Banyak suku n',2,15,1,n)}</div></div>
+ <div class="card"><p>Uji rumus S<sub>n</sub> yang kamu temukan di LKM 2 Kegiatan 3:</p>
+ <div class="fx">S<sub>n</sub> − r·S<sub>n</sub> = a − a·r<sup>n</sup> → S<sub>n</sub> = a(1 − r<sup>n</sup>)/(1 − r)</div>
+ <div>Dengan rumus: <span class="big">S<sub>${n}</sub> = ${r===1?f(a*n):f(sn)}</span></div>
+ <div>Dengan menjumlahkan satu per satu: <span class="big">${f(s)}</span></div>
+ <p class="note">${Math.abs(r-1)<1e-9?'Untuk r = 1 rumus di atas tidak dapat dipakai (penyebut nol). Gunakan S<sub>n</sub> = n·a.':'Kedua hasil harus sama. Jika tidak, periksa langkah di LKM-mu.'}</p></div>
+ <div class="card tw"><table><tr><th>k</th><th>U<sub>k</sub></th><th>S<sub>k</sub></th></tr>${rows}</table></div>`;
+ ['a','r','n'].forEach(k=>bind(k,k,vDeret))}
+function vBunga(){
+ const {m,p,t}=st,r=1+p/100,ks=Array.from({length:t+1},(_,i)=>i);
+ const mj=ks.map(k=>m*Math.pow(r,k)),tg=ks.map(k=>m*(1+k*p/100));
+ const rows=ks.map((k,i)=>`<tr><td>${k}</td><td>${f(tg[i],0)}</td><td>${f(mj[i],0)}</td></tr>`).join('');
+ $('#v').innerHTML=`<div class="card"><div class="ctl"><label for="m">Modal (Rp)</label><input type="number" id="mn" min="100000" step="100000" value="${m}" style="grid-column:2/4">${slider('p','Bunga (%/tahun)',1,20,0.5,p)}${slider('t','Lama (tahun)',1,30,1,t)}</div></div>
+ <div class="card"><div class="fx">Saldo tahun ke-t: M<sub>t</sub> = M<sub>0</sub> · (1 + ${f(p,1)}%)<sup>t</sup> → a = ${f(m,0)}, r = ${f(r,3)}</div>
+ <div>Bunga majemuk: <span class="big">Rp${f(mj[t],0)}</span></div><div>Bunga tunggal: <span class="big" style="color:var(--ac2)">Rp${f(tg[t],0)}</span></div>
+ <div>Selisih: <b>Rp${f(mj[t]-tg[t],0)}</b></div>
+ <div class="lg"><span><i class="dot" style="background:var(--ac)"></i>Majemuk (geometri)</span><span><i class="dot" style="background:var(--ac2)"></i>Tunggal (aritmetika)</span></div>
+ ${chart([{d:mj,c:'var(--ac)'},{d:tg,c:'var(--ac2)'}],ks)}
+ <div class="tip">Bunga majemuk berbunga dari bunga sebelumnya, sehingga membentuk barisan geometri. Coba lama 30 tahun: seberapa besar selisihnya?</div></div>
+ <div class="card tw"><table><tr><th>Tahun</th><th>Bunga tunggal (Rp)</th><th>Bunga majemuk (Rp)</th></tr>${rows}</table></div>`;
+ $('#mn').onchange=e=>{const v=parseFloat(e.target.value);if(v>0){st.m=v;vBunga()}};
+ ['p','t'].forEach(k=>bind(k,k,vBunga))}
+function draw(){({lipat:vLipat,barisan:vBar,deret:vDeret,bunga:vBunga})[cur]()}
+nav();draw();
+</script></body></html>
